@@ -1,32 +1,30 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
+    <!-- 头部 -->
+    <chicken-header></chicken-header>
+    <!-- 标签导航栏 -->
+    <tab-bar></tab-bar>
+    <!-- 主页面-路由跳转 -->
+    <keep-alive>
+      <router-view></router-view>
+    </keep-alive>
   </div>
 </template>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
+<script>
+import ChickenHeader from 'components/content/header/Header'
+import TabBar from 'components/content/tab-bar/TabBar'
 
-#nav {
-  padding: 30px;
+export default {
+  name: "app",
+  components: {
+    ChickenHeader,
+    TabBar
+  }
 }
+</script>
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-#nav a.router-link-exact-active {
-  color: #42b983;
-}
+<style lang="stylus" scoped rel="stylesheet/stylus">
 </style>
+
+
