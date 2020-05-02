@@ -16,3 +16,14 @@ export function hasClass(el, className) {
     // rerurn reg.test(el.className)
     return el.classList.contains(className)
 }
+
+//给el添加data-...的属性
+export function getData(el, name, val) {
+    const prefix = 'data-';
+    name = prefix + name;
+    if (val) {
+        return el.setAttribute(name, val)
+    } else {
+        return el.getAttribute(name)
+    }
+}
