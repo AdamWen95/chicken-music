@@ -1,6 +1,8 @@
 <template>
   <div class="singer">
-    <list-view :data="singers"></list-view>
+    <list-view :data="singers" @select="selectSinger"></list-view>
+    <!-- 歌手详情页路由占位 -->
+    <router-view></router-view>
   </div>
 </template>
 
@@ -11,6 +13,8 @@ import {ERR_OK} from 'api/config'
 import Singer from 'common/js/singer'
 
 import ListView from 'components/common/listview/ListView'
+
+import {mapMutations} from 'vuex'
 
 //定义常量
 const HOT_NAME = '热门'
@@ -29,6 +33,14 @@ export default {
     this._getSingerList()
   },
   methods: {
+    //list-view组件发射的点击歌手事件
+    selectSinger(singer) {
+      this.$router.push({
+        path: `/singer/${singer.id}`
+      })
+      //向vuex中setsinger
+      this.setSinger(singer)
+    },
     _getSingerList() {
       getSingerList().then((res) => {
         if (res.code === ERR_OK) {
@@ -84,7 +96,11 @@ export default {
 
       //将ret拼接到hot后面返回
       return hot.concat(ret)
-    }
+    },
+    //映射mutations
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    })
   }
 }
 </script>

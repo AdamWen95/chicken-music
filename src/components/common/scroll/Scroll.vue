@@ -25,6 +25,11 @@ export default {
     data: {
       type: Array,
       default: []
+    },
+    //是否监听scroll的滚动
+    listenScroll: {
+      type: Boolean,
+      default: false
     }
   },
   mounted() {
@@ -42,6 +47,14 @@ export default {
         probeType: this.probeType,
         click: this.click
       })
+
+      if (this.listenScroll) {
+        //better-scroll内部的this指向better-scroll的对象，在其外部定义me指向vue实例，然后在内部通过me调用$emit方法
+        let me = this
+        this.scroll.on('scroll', (pos) => {
+          me.$emit('scroll', pos)
+        })
+      }
     },
 
     //这些方法调用的时候需要确保scroll已经被创建
