@@ -27,3 +27,36 @@ export function getData(el, name, val) {
         return el.getAttribute(name)
     }
 }
+
+//考虑兼容性，给style按照各个浏览器的内核加前缀
+let elementStyle = document.createElement('div').style
+//立即执行函数
+let vendor = (() => {
+  let transformNames = {
+    webkit: 'webkitTransform',
+    Moz: 'MozTransform',
+    O: 'OTransform',
+    ms: 'msTransform',
+    standard: 'transform'
+  }
+  //返回前缀名称
+  for (let key in transformNames) {
+    if (elementStyle[transformNames[key]] !== undefined) {
+      return key
+    }
+  }
+
+  return false
+})()
+
+export function prefixStyle(style) {
+  if (vendor === false) {
+    return false
+  }
+
+  if (vendor === 'standard') {
+    return style
+  }
+  //前缀+style的首字母大写+后续的字母
+  return vendor + style.charAt(0).toUpperCase() + style.substr(1)
+}

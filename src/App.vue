@@ -8,18 +8,22 @@
     <keep-alive>
       <router-view></router-view>
     </keep-alive>
+    <!-- 播放器 -->
+    <player></player>
   </div>
 </template>
 
 <script>
 import ChickenHeader from 'components/content/header/Header'
 import TabBar from 'components/content/tab-bar/TabBar'
+import Player from 'components/content/player/Player'
 
 export default {
   name: "app",
   components: {
     ChickenHeader,
-    TabBar
+    TabBar,
+    Player
   }
 }
 </script>

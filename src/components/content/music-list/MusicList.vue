@@ -1,21 +1,33 @@
 <template>
   <div class="music-list">
     <!-- 返回按钮 -->
-    <div class="back">
+    <div class="back" @click="back">
       <i class="icon-back"></i>
     </div>
     <!-- 歌手名字 -->
     <h1 class="title" v-html="title"></h1>
     <!-- 背景图片 -->
     <div class="bg-image" :style="bgStyle" ref="bgImage">
-      <div class="filter"></div>
+      <!-- 播放按钮 -->
+      <div class="play-wrapper">
+        <!-- 在有歌曲数据后再展现按钮 -->
+        <div class="play" v-show="songs.length > 0" ref="playBtn">
+          <i class="icon-play"></i>
+          <span class="text">随机播放全部</span>
+        </div>
+      </div>
+      <div class="filter" ref="filter"></div>
     </div>
     <!-- 歌曲列表 为了正确计算scroll的高度，也把songs作为data传进去-->
     <!-- bg-layer背景层随着列表向上滚动，使列表在屏幕中的显示区域变大 -->
     <div class="bg-layer" ref="layer"></div>
     <scroll @scroll="scroll" :probe-type="probeType" :listen-scroll="listenScroll" :data="songs" class="list" ref="list">
       <div class="song-list-wrapper">
-        <song-list :songs="songs"></song-list>
+        <song-list :songs="songs" @select="selectItem"></song-list>
+      </div>
+      <!-- loading组件 -->
+      <div class="loading-container" v-show="!songs.length">
+        <loading></loading>
       </div>
     </scroll>
   </div>
@@ -24,14 +36,22 @@
 <script>
 import Scroll from 'components/common/scroll/Scroll'
 import SongList from 'components/common/song-list/SongList'
+import Loading from 'components/common/loading/Loading'
+
+import {prefixStyle} from 'common/js/dom'
+
+import {mapActions} from 'vuex'
 
 //背景层滚动到最上方后预留的高度
 const RESERVED_HEIGHT = 40
+const transform = prefixStyle('transform')
+const backdrop = prefixStyle('backdrop-filter')
 
 export default {
   components: {
     Scroll,
-    SongList
+    SongList,
+    Loading
   },
   props: {
     bgImage: {
@@ -74,28 +94,66 @@ export default {
   methods: {
     scroll(pos) {
       this.scrollY = pos.y
-    }
+    },
+    //返回按钮
+    back() {
+      this.$router.back()
+    },
+    //子组件song-list的点击事件
+    selectItem(item, index) {
+      //actions中的方法
+      this.selectPlay({
+        list: this.songs,//播放的是列表，而不是单指这首歌
+        index
+      })
+    },
+    ...mapActions([
+      'selectPlay'
+    ])
   },
   watch: {
     scrollY(newY) {
       //translateY的滚动距离，最远滚至minTranslateY位置
       let translateY = Math.max(this.minTranslateY, newY)
-
       let zIndex = 0
-      this.$refs.layer.style['transform'] = `translate3d(0, ${translateY}px, 0)`
-      this.$refs.layer.style['webkitTransform'] = `translate3d(0, ${translateY}px, 0)`
+      //放大比例
+      let scale = 1
+      //模糊的程度
+      let blur = 0
+      //背景层的移动
+      this.$refs.layer.style[transform] = `translate3d(0, ${translateY}px, 0)`
+      // this.$refs.layer.style['webkitTransform'] = `translate3d(0, ${translateY}px, 0)`
 
-      //当滚到顶部之后，改变背景图片的大小和z-index
+      //在顶部向下拉动的时候，背景图片随之放大，scale作为比例，同时需要改变z-index使图片盖住背景
+      const percent = Math.abs(newY / this.imageHeight)
+      if (newY > 0) {
+        scale = 1 + percent
+        zIndex = 10
+      } else {
+        //随着上拉图片模糊度变大，最大20
+        blur = Math.min(20 * percent, 20)
+      }
+      //该模糊属性只有ios手机可以生效
+      this.$refs.filter.style[backdrop] = `blur(${blur}px)`
+      // this.$refs.filter.style['webkitBackdrop-filter'] = `blur(${blur}px)`
+
+      //当滚到顶部之后，改变背景图片的大小和 z-index（不然文字会盖在图片上）
       if (newY < this.minTranslateY) {
         zIndex = 10
         this.$refs.bgImage.style.paddingTop = 0
         this.$refs.bgImage.style.height = `${RESERVED_HEIGHT}px`
+        //按钮是相对于bgImage的绝对定位，因此滚动到顶部后，图片变小，按钮会出现在上方，所以需要在滚动到顶部的时候消失
+        this.$refs.playBtn.style.display = 'none'
       } else {
         //在没有到达顶部的情况下重置回原来的样式
         this.$refs.bgImage.style.paddingTop = '70%'
         this.$refs.bgImage.style.height = 0
+        this.$refs.playBtn.style.display = ''
       }
       this.$refs.bgImage.style.zIndex = zIndex
+      //顶部下拉，图片缩放
+      this.$refs.bgImage.style[transform] = `scale(${scale})`
+      // this.$refs.bgImage.style['webkitTransform'] = `scale(${scale})`
     }
   }
 }
