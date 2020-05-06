@@ -1,21 +1,180 @@
 <template>
   <div class="player" v-show="playlist.length > 0">
-    <div class="normal-player" v-show="fullScreen">
-      bububububu
+    <!-- 大播放器 -->
+    <transition name="normal" @enter="enter" @after-enter="afterEnter" @leave="leave" @after-leave="afterLeave">
+      <div class="normal-player" v-show="fullScreen">
+        <!-- 背景图 -->
+        <div class="background">
+          <img width="100%" height="100%" :src="currentSong.image" alt="">
+        </div>
+
+        <!-- 顶部 -->
+        <div class="top">
+          <!-- 返回按钮 -->
+          <div class="back" @click="back">
+            <i class="icon-back"></i>
+          </div>
+          <!-- 歌曲和歌手名称 -->
+          <h1 class="title" v-html="currentSong.name"></h1>
+          <h2 class="subtitle" v-html="currentSong.singer"></h2>
+        </div>
+
+        <!-- 中部 -->
+        <div class="middle">
+          <div class="middle-l">
+            <!-- 唱片 -->
+            <div class="cd-wrapper" ref="cdWrapper">
+              <div class="cd">
+                <img :src="currentSong.image" alt="" class="image">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="bottom">
+          <!-- 操作区 -->
+          <div class="operators">
+            <div class="icon i-left">
+              <i class="icon-sequence"></i>
+            </div>
+            <div class="icon i-left">
+              <i class="icon-prev"></i>
+            </div>
+            <div class="icon i-center">
+              <i class="icon-play"></i>
+            </div>
+            <div class="icon i-right">
+              <i class="icon-next"></i>
+            </div>
+            <div class="icon i-right">
+              <i class="icon-not-favorite"></i>
+            </div>
+          </div>
+        </div>
     </div>
-    <div class="mini-player" v-show="!fullScreen"></div>
+    </transition>
+
+
+
+    <!-- 小播放器 -->
+    <transition name="mini">
+      <div class="mini-player" v-show="!fullScreen" @click="open">
+        <!-- 小唱片图片 -->
+        <div class="icon">
+          <img width="40" height="40" :src="currentSong.image" alt="">
+        </div>
+        <!-- 歌曲和歌手名称 -->
+        <div class="text">
+          <h2 class="name" v-html="currentSong.name"></h2>
+          <p class="desc" v-html="currentSong.singer"></p>
+        </div>
+        <!-- 播放按钮 -->
+        <div class="control"></div>
+        <!-- 展开播放列表按钮 -->
+        <div class="control">
+          <i class="icon-playlist"></i>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
-import {mapGetters} from 'vuex'
+import {mapGetters, mapMutations} from 'vuex'
+//第三方库，通过js写css3动画
+import animations from 'create-keyframe-animation'
+
+import {prefixStyle} from 'common/js/dom'
+
+const transform = prefixStyle('transform')
 
 export default {
   computed: {
     ...mapGetters([
       'fullScreen',
-      'playlist'
+      'playlist',
+      'currentSong'
     ])
+  },
+  methods: {
+    //缩小与展开播放器
+    back() {
+      this.setFullScreen(false)
+    },
+    open() {
+      this.setFullScreen(true)
+    },
+
+    //唱片动画设置
+    //飞入动画
+    enter(el, done) {//done回调函数，结束后调用afterEnter
+      const {x, y, scale} = this._getPosAndScale()
+      //飞入以后放大再缩到正常大小
+      let animation = {
+        0: {
+          transform : `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+        },
+        60: {
+          transform : `translate3d(0, 0, 0) scale(1.1)`
+        },
+        100: {
+          transform : `translate3d(0, 0, 0) scale(1)`
+        }
+      }
+      //注册动画
+      animations.registerAnimation({
+        name: 'move',
+        animation,
+        presets: {
+          duration: 400,
+          easing: 'linear'
+        }
+      })
+      //运行动画
+      animations.runAnimation(this.$refs.cdWrapper, 'move', done)
+    },
+    afterEnter() {
+      animations.unregisterAnimation('move')
+      this.$refs.cdWrapper.style.animation = ''
+    },
+    //离开动画
+    leave(el, done) {
+      //这里直接通过js写，不用create-keyframe-animation
+      this.$refs.cdWrapper.style.transition = 'all 0.4s'
+      const {x, y, scale} = this._getPosAndScale()
+      this.$refs.cdWrapper.style[transform] = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+      //监听cdWrapper的动画完成事件，回调done -> afterLeave
+      this.$refs.cdWrapper.addEventListener('transitionend', done)
+    },
+    afterLeave() {
+      this.$refs.cdWrapper.style.transition = ''
+      this.$refs.cdWrapper.style[transform] = ''
+    },
+    _getPosAndScale() {
+      //小唱片的位置和大小
+      const targetWidth = 40
+      const paddingLeft = 40
+      const paddingBottom = 30
+      //大唱片的位置和大小
+      const paddingTop = 80
+      const width = window.innerWidth * 0.8 //屏幕宽度的80%
+      //缩放比例
+      const scale = targetWidth / width
+      //移动距离
+      const x = -(window.innerWidth / 2 - paddingLeft)
+      const y = window.innerHeight - paddingTop - width/2 - paddingBottom
+
+      return {
+        x,
+        y,
+        scale
+      }
+    },
+    //不能直接修改store的数据，需要通过mutations的方法
+    ...mapMutations({
+      setFullScreen: 'SET_FULL_SCREEN'
+    })
   }
 }
 </script>

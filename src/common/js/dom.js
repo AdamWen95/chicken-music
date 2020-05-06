@@ -28,6 +28,7 @@ export function getData(el, name, val) {
     }
 }
 
+
 //考虑兼容性，给style按照各个浏览器的内核加前缀
 let elementStyle = document.createElement('div').style
 //立即执行函数
