@@ -25,7 +25,7 @@
             <!-- 唱片 -->
             <div class="cd-wrapper" ref="cdWrapper">
               <div class="cd">
-                <img :src="currentSong.image" alt="" class="image">
+                <img :class="cdCls" :src="currentSong.image" class="image">
               </div>
             </div>
           </div>
@@ -38,14 +38,14 @@
             <div class="icon i-left">
               <i class="icon-sequence"></i>
             </div>
-            <div class="icon i-left">
-              <i class="icon-prev"></i>
+            <div class="icon i-left" :class="disableCls">
+              <i class="icon-prev" @click="prev"></i>
             </div>
-            <div class="icon i-center">
-              <i class="icon-play"></i>
+            <div class="icon i-center" :class="disableCls">
+              <i :class="playIcon" @click="togglePlaying"></i>
             </div>
-            <div class="icon i-right">
-              <i class="icon-next"></i>
+            <div class="icon i-right" :class="disableCls">
+              <i class="icon-next" @click="next"></i>
             </div>
             <div class="icon i-right">
               <i class="icon-not-favorite"></i>
@@ -55,14 +55,14 @@
     </div>
     </transition>
 
-
-
     <!-- 小播放器 -->
     <transition name="mini">
       <div class="mini-player" v-show="!fullScreen" @click="open">
         <!-- 小唱片图片 -->
         <div class="icon">
-          <img width="40" height="40" :src="currentSong.image" alt="">
+          <div class="imgWrapper">
+            <img :class="cdCls" width="40" height="40" :src="currentSong.image">
+          </div>
         </div>
         <!-- 歌曲和歌手名称 -->
         <div class="text">
@@ -70,13 +70,19 @@
           <p class="desc" v-html="currentSong.singer"></p>
         </div>
         <!-- 播放按钮 -->
-        <div class="control"></div>
+        <div class="control">
+          <!-- 阻止点击事件冒泡，防止点击播放键导致播放器展开 -->
+          <i :class="miniIcon" @click.stop="togglePlaying"></i>
+        </div>
         <!-- 展开播放列表按钮 -->
         <div class="control">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
+
+    <!-- 监听canplay：歌曲请求到了才能播放（调用ready方法修改songReady值）和error：歌曲加载发生错误 事件；歌曲ready了才能点击下一首 -->
+    <audio :src="currentSong.url" ref="audio" @canplay="ready" @error="error"></audio>
   </div>
 </template>
 
@@ -90,14 +96,42 @@ import {prefixStyle} from 'common/js/dom'
 const transform = prefixStyle('transform')
 
 export default {
+  data() {
+    return {
+      songReady: false
+    }
+  },
   computed: {
     ...mapGetters([
       'fullScreen',
       'playlist',
-      'currentSong'
-    ])
+      'currentSong',
+      'playing',
+      'currentIndex'
+    ]),
+    //播放/暂停图标
+    playIcon() {
+      return this.playing ? 'icon-pause' : 'icon-play'
+    },
+    miniIcon() {
+      return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+    },
+    //唱片旋转样式
+    cdCls() {
+      return this.playing ? 'play' : ''
+    },
+    //根据songReady切换按钮是否可以点击的样式
+    disableCls() {
+      return this.songReady ? '' : 'disable'
+    }
   },
   methods: {
+    //不能直接修改store的数据，需要通过mutations的方法
+    ...mapMutations({
+      setFullScreen: 'SET_FULL_SCREEN',
+      setPlayingState: 'SET_PLAYING_STATE',
+      setCurrentIndex: 'SET_CURRENT_INDEX'
+    }),
     //缩小与展开播放器
     back() {
       this.setFullScreen(false)
@@ -171,10 +205,78 @@ export default {
         scale
       }
     },
-    //不能直接修改store的数据，需要通过mutations的方法
-    ...mapMutations({
-      setFullScreen: 'SET_FULL_SCREEN'
-    })
+    //播放/暂停
+    togglePlaying() {
+      //如果没有ready，则无法切换
+      if (!this.songReady) {
+        return
+      }
+
+      this.setPlayingState(!this.playing)
+    },
+    //下一首
+    next() {
+      //如果没有ready，无法点击进入下一首
+      if (!this.songReady) {
+        return
+      }
+
+      let index = this.currentIndex + 1
+      //最后一首的情况->回到开头
+      if (index === this.playlist.length) {
+        index = 0
+      }
+      this.setCurrentIndex(index)
+      //暂停情况下，切到下一首歌变为播放状态
+      if (!this.playing) {
+        this.togglePlaying()
+      }
+
+      //点击完重置songReady
+      this.songReady = false
+    },
+    //前一首
+    prev() {
+      if (!this.songReady) {
+        return
+      }
+
+      let index = this.currentIndex - 1
+      if (index === -1) {
+        //第一首的情况
+        index = this.playlist.length - 1
+      }
+      this.setCurrentIndex(index)
+      if (!this.playing) {
+        this.togglePlaying()
+      }
+
+      this.songReady = false
+    },
+    ready() {
+      this.songReady = true
+    },
+    //如果网络错误或者url有问题，会导致下一首、播放按钮等点击事件无法进行切歌，因此在error发生的时候也将songReady设为true
+    error() {
+      this.songReady = true
+    }
+  },
+  watch: {
+    //监听currentSong改变->播放歌曲
+    currentSong() {
+      //需要加一个延时，确保dom渲染后再播放
+      this.$nextTick(() => {
+        this.$refs.audio.play()
+      })
+    },
+    //监听playing的改变->控制播放和暂停
+    playing(newPlaying) {
+      const audio = this.$refs.audio
+      //需要加一个延时，确保dom渲染后再播放；点击某首歌曲的时候通过actions将state中的playing状态改为true了
+      this.$nextTick(() => {
+        newPlaying ? audio.play() : audio.pause()
+      })
+    }
   }
 }
 </script>
@@ -421,6 +523,7 @@ export default {
           left: 0
           top: 0
 
+  // 旋转动画的定义
   @keyframes rotate
     0%
       transform: rotate(0)
