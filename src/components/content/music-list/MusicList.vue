@@ -11,7 +11,7 @@
       <!-- 播放按钮 -->
       <div class="play-wrapper">
         <!-- 在有歌曲数据后再展现按钮 -->
-        <div class="play" v-show="songs.length > 0" ref="playBtn">
+        <div class="play" v-show="songs.length > 0" ref="playBtn" @click="random">
           <i class="icon-play"></i>
           <span class="text">随机播放全部</span>
         </div>
@@ -107,8 +107,15 @@ export default {
         index
       })
     },
+    //随机播放全部
+    random() {
+      this.randomPlay({
+        list: this.songs
+      })
+    },
     ...mapActions([
-      'selectPlay'
+      'selectPlay',
+      'randomPlay'
     ])
   },
   watch: {
