@@ -1,5 +1,5 @@
 <template>
-  <div class="recommend">
+  <div class="recommend" ref="recommend">
     <!-- 传入discList，因为数据的请求是异步操作，更新数据后scroll内部会刷新高度，防止滚动异常 -->
     <scroll class="recommend-content" :data="discList" ref="scroll">
       <div>
@@ -48,7 +48,10 @@ import Loading from 'components/common/loading/Loading'
 import {getRecommend, getDiscList} from 'api/recommend'
 import {ERR_OK} from 'api/config'
 
+import {playlistMixin} from 'common/js/mixin'
+
 export default {
+  mixins: [playlistMixin],
   data() {
     return {
       // 轮播图数据
@@ -66,6 +69,12 @@ export default {
     this._getDiscList()
   },
   methods: {
+    //根据底部小播放器的高度，重新定义recommend的高度，并刷新scroll的高度，避免其底部被遮住
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : ''
+      this.$refs.recommend.style.bottom = bottom
+      this.$refs.scroll.refresh()
+    },
     //获取轮播图数据
     _getRecommend() {
       getRecommend().then((res) => {

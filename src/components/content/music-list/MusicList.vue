@@ -39,6 +39,7 @@ import SongList from 'components/common/song-list/SongList'
 import Loading from 'components/common/loading/Loading'
 
 import {prefixStyle} from 'common/js/dom'
+import {playlistMixin} from 'common/js/mixin'
 
 import {mapActions} from 'vuex'
 
@@ -48,6 +49,7 @@ const transform = prefixStyle('transform')
 const backdrop = prefixStyle('backdrop-filter')
 
 export default {
+  mixins: [playlistMixin],
   components: {
     Scroll,
     SongList,
@@ -92,6 +94,12 @@ export default {
     this.$refs.list.$el.style.top = `${this.imageHeight}px`
   },
   methods: {
+    //根据底部小播放器的高度，重新定义scroll内部的元素的高度，并刷新scroll，避免其底部被遮住
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : ''
+      this.$refs.list.$el.style.bottom = bottom
+      this.$refs.list.refresh()
+    },
     scroll(pos) {
       this.scrollY = pos.y
     },

@@ -17,7 +17,7 @@ const debug = process.env.NODE_ENV !== 'production'
 //获取轮播图数据
 export function getRecommend() {
     // 线上环境地址
-    const url = debug ? '/api/getTopBanner' : 'http://ustbhuangyi.com/music/api/getTopBanner'
+    const url = '/api/getTopBanner'
 
     const data = Object.assign({}, commonParams, {
         platform: 'yqq.json',
@@ -61,7 +61,7 @@ export function getRecommend() {
 //获取歌单数据
 export function getDiscList() {
     // 线上环境地址
-    const url = debug ? '/api/getDiscList' : 'http://ustbhuangyi.com/music/api/getDiscList'
+    const url = '/api/getDiscList'
 
     const data = Object.assign({}, commonParams, {
         platform: 'yqq',

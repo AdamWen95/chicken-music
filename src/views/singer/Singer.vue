@@ -1,6 +1,6 @@
 <template>
-  <div class="singer">
-    <list-view :data="singers" @select="selectSinger"></list-view>
+  <div class="singer" ref="singer">
+    <list-view :data="singers" @select="selectSinger" ref="list"></list-view>
     <!-- 歌手详情页路由占位 -->
     <router-view></router-view>
   </div>
@@ -11,6 +11,7 @@ import {getSingerList} from 'api/singer'
 import {ERR_OK} from 'api/config'
 
 import Singer from 'common/js/singer'
+import {playlistMixin} from 'common/js/mixin'
 
 import ListView from 'components/common/listview/ListView'
 
@@ -21,6 +22,7 @@ const HOT_NAME = '热门'
 const HOT_SINGER_LEN = 10
 
 export default {
+  mixins: [playlistMixin],
   data() {
     return {
       singers: []
@@ -33,6 +35,12 @@ export default {
     this._getSingerList()
   },
   methods: {
+    //根据底部小播放器的高度，重新定义lisview的高度，并刷新scroll的高度，避免其底部被遮住
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : ''
+      this.$refs.singer.style.bottom = bottom
+      this.$refs.list.refresh()
+    },
     //list-view组件发射的点击歌手事件
     selectSinger(singer) {
       this.$router.push({

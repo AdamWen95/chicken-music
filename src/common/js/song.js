@@ -1,5 +1,6 @@
-import { getLyric, getSongsUrl } from 'api/song'
-import { ERR_OK } from 'api/config'
+import {getLyric, getSongsUrl} from 'api/song'
+import {ERR_OK} from 'api/config'
+import {Base64} from 'js-base64'
 
 export default class Song {
   constructor ({ id, mid, singer, name, album, duration, image, url }) {
@@ -12,6 +13,27 @@ export default class Song {
     this.image = image
     this.filename = `C400${this.mid}.m4a`
     this.url = url
+  }
+
+  //请求歌词的方法，返回的歌词包装成promise对象
+  getLyric() {
+    //如果已经存在歌词，直接返回歌词，不重复请求
+    if (this.lyric) {
+      return Promise.resolve(this.lyric)
+    }
+
+    return new Promise((resolve, reject) => {
+      getLyric(this.mid).then((res) => {
+        if (res.retcode === ERR_OK) {
+          //歌词数据是base64格式，需要解码
+          this.lyric = Base64.decode(res.lyric)
+          // console.log(this.lyric)
+          resolve(this.lyric)
+        } else {
+          reject('no lyric')
+        }
+      })
+    })
   }
 }
 

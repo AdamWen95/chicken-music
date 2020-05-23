@@ -20,19 +20,40 @@
         </div>
 
         <!-- 中部 -->
-        <div class="middle">
-          <div class="middle-l">
-            <!-- 唱片 -->
+        <div class="middle" @touchstart.prevent="middleTouchStart" @touchmove.prevent="middleTouchMove" @touchend="middleTouchEnd">
+          <!-- 唱片 -->
+          <div class="middle-l" ref="middleL">
             <div class="cd-wrapper" ref="cdWrapper">
               <div class="cd">
                 <img :class="cdCls" :src="currentSong.image" class="image">
               </div>
             </div>
+            <!-- 播放时展示在cd下的一行歌词 -->
+            <div class="playing-lyric-wrapper">
+              <div class="playing-lyric">{{playingLyric}}</div>
+            </div>
           </div>
+
+          <!-- 歌词页 -->
+          <!-- 在有数据的情况下才传递数据到scroll组件 -->
+          <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
+            <div class="lyric-wrapper">
+              <div v-if="currentLyric">
+                <!-- currentLineNum和索引相同时高亮当前行歌词 -->
+                <p ref="lyricLine" class="text" v-for="(line, index) in currentLyric.lines" :key="index"
+                :class="{'current': currentLineNum === index}">{{line.txt}}</p>
+              </div>
+            </div>
+          </scroll>
         </div>
 
         <!-- 底部 -->
         <div class="bottom">
+          <!-- cd、歌词切换小点 -->
+          <div class="dot-wrapper">
+            <span class="dot" :class="{'active': currentShow === 'cd'}"></span>
+            <span class="dot" :class="{'active': currentShow === 'lyric'}"></span>
+          </div>
           <!-- 进度条 -->
           <div class="progress-wrapper">
             <span class="time time-l">{{format(currentTime)}}</span>
@@ -101,27 +122,38 @@
 <script>
 import ProgressBar from 'components/common/progress-bar/ProgressBar'
 import ProgressCircle from 'components/common/progress-circle/ProgressCircle'
+import Scroll from 'components/common/scroll/Scroll'
 
 import {mapGetters, mapMutations} from 'vuex'
 //第三方库，通过js写css3动画
 import animations from 'create-keyframe-animation'
+//第三方库，解析歌词字符串
+import Lyric from 'lyric-parser'
 
 import {prefixStyle} from 'common/js/dom'
 import {playMode} from 'common/js/config'
 import {shuffle} from 'common/js/util'
 
 const transform = prefixStyle('transform')
+const transitionDuration = prefixStyle('transitionDuration')
 
 export default {
   components: {
     ProgressBar,
-    ProgressCircle
+    ProgressCircle,
+    Scroll
   },
   data() {
     return {
       songReady: false,
       currentTime: 0,
-      radius: 32
+      radius: 32,
+      currentLyric: null,
+      //当前播放到的歌词行
+      currentLineNum: 0,
+      //展示的是cd页还是歌词页
+      currentShow: 'cd',
+      playingLyric: ''
     }
   },
   computed: {
@@ -157,6 +189,9 @@ export default {
     percent() {
       return this.currentTime / this.currentSong.duration
     }
+  },
+  created() {
+    this.touch = {}
   },
   methods: {
     //不能直接修改store的数据，需要通过mutations的方法
@@ -241,6 +276,7 @@ export default {
         scale
       }
     },
+
     //播放/暂停
     togglePlaying() {
       //如果没有ready，则无法切换
@@ -248,6 +284,11 @@ export default {
         return
       }
       this.setPlayingState(!this.playing)
+
+      //歌词也需要暂停/播放
+      if (this.currentLyric) {
+        this.currentLyric.togglePlay()
+      }
     },
     //歌曲播放结束
     end() {
@@ -262,6 +303,10 @@ export default {
       //将歌曲进度重置为0
       this.$refs.audio.currentTime = 0
       this.$refs.audio.play()
+      //歌曲回到开头，歌词也需要回到0位置，这里调用了seek方法
+      if (this.currentLyric) {
+        this.currentLyric.seek(0)
+      }
     },
     //下一首
     next() {
@@ -270,15 +315,20 @@ export default {
         return
       }
 
-      let index = this.currentIndex + 1
-      //最后一首的情况->回到开头
-      if (index === this.playlist.length) {
-        index = 0
-      }
-      this.setCurrentIndex(index)
-      //暂停情况下，切到下一首歌变为播放状态
-      if (!this.playing) {
-        this.togglePlaying()
+      if (this.playlist.length === 1) {
+        //如果列表里面只有一首歌曲，直接调用循环，否则currentSong不改变，后面的逻辑不会执行
+        this.loop()
+      } else {
+        let index = this.currentIndex + 1
+        //最后一首的情况->回到开头
+        if (index === this.playlist.length) {
+          index = 0
+        }
+        this.setCurrentIndex(index)
+        //暂停情况下，切到下一首歌变为播放状态
+        if (!this.playing) {
+          this.togglePlaying()
+        }
       }
 
       //点击完重置songReady
@@ -290,14 +340,19 @@ export default {
         return
       }
 
-      let index = this.currentIndex - 1
-      if (index === -1) {
-        //第一首的情况
-        index = this.playlist.length - 1
-      }
-      this.setCurrentIndex(index)
-      if (!this.playing) {
-        this.togglePlaying()
+      if (this.playlist.length === 1) {
+        //如果列表里面只有一首歌曲，直接调用循环，否则currentSong不改变，后面的逻辑不会执行
+        this.loop()
+      } else {
+        let index = this.currentIndex - 1
+        if (index === -1) {
+          //第一首的情况
+          index = this.playlist.length - 1
+        }
+        this.setCurrentIndex(index)
+        if (!this.playing) {
+          this.togglePlaying()
+        }
       }
 
       this.songReady = false
@@ -323,10 +378,15 @@ export default {
     },
     //根据进度条组件发射的percent修改事件来改变播放进度
     onProgressBarChange(percent) {
-      this.$refs.audio.currentTime = this.currentSong.duration * percent
+      const currentTime = this.currentSong.duration * percent
+      this.$refs.audio.currentTime = currentTime
       //如果是暂停状态，则拖动完毕开始播放
       if (!this.playing) {
         this.togglePlaying()
+      }
+      //歌词根据进度条的拖动移动到相应的位置（单位是ms）
+      if (this.currentLyric) {
+        this.currentLyric.seek(currentTime * 1000)
       }
     },
     //改变播放模式
@@ -353,6 +413,106 @@ export default {
       })
       this.setCurrentIndex(index)
     },
+
+    //请求歌词
+    getLyric() {
+      //调用歌曲对象中的请求歌词的方法
+      this.currentSong.getLyric().then((lyric) => {
+        //解析歌词
+        this.currentLyric = new Lyric(lyric, this.handleLyric)
+        if (this.playing) {
+          this.currentLyric.play()
+        }
+      }).catch(() => {
+        //歌词获取失败的情况
+        this.currentLyric = null
+        this.playingLyric = ''
+        this.currentLineNum = 0
+      })
+    },
+    //歌词每一行发生改变的时候回调的函数
+    handleLyric({lineNum, txt}) {
+      //当前播放的那行歌词
+      this.currentLineNum = lineNum
+      //当播放到超过5行的时候，滚动到当前行-5的元素位置，保证当前行在屏幕中间
+      if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5]
+        this.$refs.lyricList.scrollToElement(lineEl, 1000)
+      } else {
+        //否则滚动到顶部
+        this.$refs.lyricList.scrollTo(0, 0, 1000)
+      }
+      //将当前行的歌词内容赋值给playingLyric
+      this.playingLyric = txt
+    },
+    middleTouchStart(e) {
+      //初始化
+      this.touch.initiated = true
+      //第一根手指
+      const touch = e.touches[0]
+      //开始触碰时x y坐标
+      this.touch.startX = touch.pageX
+      this.touch.startY = touch.pageY
+    },
+    //拖动歌词页
+    middleTouchMove(e) {
+      if (!this.touch.initiated) {
+        return
+      }
+      const touch = e.touches[0]
+      const deltaX = touch.pageX - this.touch.startX
+      const deltaY = touch.pageY - this.touch.startY
+      //如果纵向的滚动距离大于横向的，那么什么都不发生，只支持横向滚动
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        return
+      }
+      //歌词页的左边距离屏幕右边的距离
+      const left = this.currentShow === 'cd' ? 0 : -window.innerWidth
+      //歌词页移动的距离left + deltaX，最大值0，最小值-window.innerWidth
+      const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX))
+      //歌词页在手指接触下拖动的距离占整个屏幕宽度的比例
+      this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
+
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px, 0, 0)`
+      this.$refs.lyricList.$el.style[transitionDuration] = 0
+      //cd页的透明度，和percent负相关
+      this.$refs.middleL.style.opacity = 1 - this.touch.percent
+      this.$refs.middleL.style[transitionDuration] = 0
+    },
+    middleTouchEnd() {
+      let offsetWidth
+      let opacity
+      if (this.currentShow === 'cd') {
+        //拖动超过10%，则滑动到歌词页面（cd页面透明度为0），否则回到原页面
+        if (this.touch.percent > 0.1) {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+          this.currentShow = 'lyric'
+        } else {
+          offsetWidth = 0
+          opacity = 1
+        }
+      } else {
+        if (this.touch.percent < 0.9) {
+          offsetWidth = 0
+          opacity = 1
+          this.currentShow = 'cd'
+        } else {
+          offsetWidth = -window.innerWidth
+          opacity = 0
+        }
+      }
+
+      const time = 300
+      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px, 0, 0)`
+      //设置一个移动的动画时长
+      this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`
+
+      //cd页的透明度
+      this.$refs.middleL.style.opacity = opacity
+      this.$refs.middleL.style[transitionDuration] = `${time}ms`
+    },
+
     //数字补位，默认是2位
     _pad(num, n = 2) {
       let len = num.toString().length
@@ -370,10 +530,19 @@ export default {
       if (newSong.id === oldSong.id) {
         return
       }
+
+      //清除定时器
+      if (this.currentLyric) {
+        this.currentLyric.stop()
+      }
+
       //需要加一个延时，确保dom渲染后再播放
-      this.$nextTick(() => {
+      //采用1000ms延迟，确保手机从后台切到前台歌曲能继续播放
+      setTimeout(() => {
         this.$refs.audio.play()
-      })
+        //请求歌词
+        this.getLyric()
+      }, 1000)
     },
     //监听playing的改变->控制播放和暂停
     playing(newPlaying) {

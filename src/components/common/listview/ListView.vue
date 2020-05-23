@@ -184,6 +184,10 @@ export default {
         height += item.clientHeight
         this.listHeight.push(height)
       }
+    },
+    //给list-view也向外暴露一个内部scroll组件的refresh方法，方便父组件调用
+    refresh() {
+      this.$refs.listview.refresh()
     }
   }
 }
