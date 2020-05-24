@@ -19,7 +19,7 @@
         <div class="recommend-list">
           <h1 class="list-title">热门歌单推荐</h1>
           <ul>
-            <li v-for="(item, index) in discList" :key="index" class="item">
+            <li v-for="(item, index) in discList" :key="index" class="item" @click="selectItem(item)">
               <div class="icon">
                 <img width="60" height="60" v-lazy="item.imgurl" alt="">
               </div>
@@ -37,6 +37,9 @@
         <loading></loading>
       </div>
     </scroll>
+
+    <!-- 歌单详情页-路由占位 -->
+    <router-view></router-view>
   </div>
 </template>
 
@@ -49,6 +52,8 @@ import {getRecommend, getDiscList} from 'api/recommend'
 import {ERR_OK} from 'api/config'
 
 import {playlistMixin} from 'common/js/mixin'
+
+import {mapMutations} from 'vuex'
 
 export default {
   mixins: [playlistMixin],
@@ -69,12 +74,25 @@ export default {
     this._getDiscList()
   },
   methods: {
+    ...mapMutations({
+      setDisc: 'SET_DISC'
+    }),
+
     //根据底部小播放器的高度，重新定义recommend的高度，并刷新scroll的高度，避免其底部被遮住
     handlePlaylist(playlist) {
       const bottom = playlist.length > 0 ? '60px' : ''
       this.$refs.recommend.style.bottom = bottom
       this.$refs.scroll.refresh()
     },
+
+    //点击列表item跳转歌单详情页
+    selectItem(item) {
+      this.$router.push({
+        path: `/recommend/${item.dissid}`
+      })
+      this.setDisc(item)
+    },
+
     //获取轮播图数据
     _getRecommend() {
       getRecommend().then((res) => {

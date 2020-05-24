@@ -7,7 +7,7 @@ const debug = process.env.NODE_ENV !== 'production'
 
 //去请求之前代理的批量获取歌曲 url 的接口
 export function getSongsUrl (songs) {
-  const url = debug ? '/api/getPurlUrl' : 'http://ustbhuangyi.com/music/api/getPurlUrl'
+  const url = '/api/getPurlUrl'
 
   let mids = []
   let types = []

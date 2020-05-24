@@ -7,7 +7,9 @@ const state = {
   playlist: [],
   sequenceList: [],//顺序播放列表
   mode: playMode.sequence,
-  currentIndex: -1
+  currentIndex: -1,
+
+  disc: {} //歌单的数据
 }
 
 export default state
