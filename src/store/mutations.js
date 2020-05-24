@@ -22,9 +22,13 @@ const mutations = {
   [types.SET_CURRENT_INDEX] (state, index) {
     state.currentIndex = index
   },
-
-  [types.SET_DISC] (state,disc) {
+  //添加被点击的歌单item
+  [types.SET_DISC] (state, disc) {
     state.disc = disc
+  },
+  //添加被点击的排行榜item
+  [types.SET_TOP_LIST] (state, topList) {
+    state.topList = topList
   }
 }
 

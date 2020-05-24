@@ -8,40 +8,47 @@ const Rank = () => import ('views/rank/Rank')
 const Search = () => import ('views/search/Search')
 const SingerDetail = () => import ('views/singer-detail/SingerDetail')
 const Disc = () => import ('views/disc/Disc')
+const TopList = () => import ('views/top-list/TopList')
 
 Vue.use(VueRouter)
 
 const routes = [{
-        path: '/',
-        redirect: '/recommend'
+      path: '/',
+      redirect: '/recommend'
     },
     {
-        path: '/recommend',
-        component: Recommend,
-        children: [
-          {
-            path: ':id',
-            component: Disc
-          }
-        ]
+      path: '/recommend',
+      component: Recommend,
+      children: [
+        {
+          path: ':id',
+          component: Disc
+        }
+      ]
     },
     {
-        path: '/singer',
-        component: Singer,
-        children: [
-          {
+      path: '/singer',
+      component: Singer,
+      children: [
+        {
           path: ':id',
           component: SingerDetail
-          }
-        ]
+        }
+      ]
     },
     {
-        path: '/rank',
-        component: Rank
+      path: '/rank',
+      component: Rank,
+      children: [
+        {
+          path: ':id',
+          component: TopList
+        }
+      ]
     },
     {
-        path: '/search',
-        component: Search
+      path: '/search',
+      component: Search
     }
 ]
 

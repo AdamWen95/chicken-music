@@ -9,7 +9,9 @@ const state = {
   mode: playMode.sequence,
   currentIndex: -1,
 
-  disc: {} //歌单的数据
+  disc: {}, //歌单被点击的item
+
+  topList: {} //排行榜被点击的item
 }
 
 export default state
