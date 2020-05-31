@@ -2,6 +2,9 @@
   <div class="song-list">
     <ul>
       <li v-for="(song, index) in songs" :key="index" class="item" @click="selectItem(song, index)">
+        <div class="rank" v-show="rank">
+          <span :class="getRankCls(index)">{{getRankText(index)}}</span>
+        </div>
         <div class="content">
           <h2 class="name">{{song.name}}</h2>
           <p class="desc">{{getDesc(song)}}</p>
@@ -19,6 +22,11 @@ export default {
       default() {
         return []
       }
+    },
+    //是否有排行的样式
+    rank: {
+      type: Boolean,
+      default: false
     }
   },
   methods: {
@@ -27,6 +35,24 @@ export default {
     },
     selectItem(item, index) {
       this.$emit('select', item, index)
+    },
+
+    //排行榜情况下的样式和文案
+    getRankCls(index) {
+      //前三名 奖杯icon
+      if (index <= 2) {
+        return `icon icon${index}`
+      } else {
+        //后面的 文本样式
+        return 'text'
+      }
+
+    },
+    getRankText(index) {
+      //前三名没有文案
+      if (index > 2) {
+        return index + 1
+      }
     }
   }
 }
