@@ -51,7 +51,7 @@ export default {
   methods: {
     ...mapMutations({
       setTopList: 'SET_TOP_LIST'
-    })
+    }),
     //根据底部小播放器的高度，重新定义rank内部的元素的高度，并刷新scroll，避免其底部被遮住
     handlePlaylist(playlist) {
       const bottom = playlist.length > 0 ? '60px' : ''
