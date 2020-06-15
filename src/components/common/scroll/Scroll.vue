@@ -30,6 +30,16 @@ export default {
     listenScroll: {
       type: Boolean,
       default: false
+    },
+    //是否能上拉加载更多
+    pullup: {
+      type: Boolean,
+      default: false
+    },
+    //是否监听滚动开始事件
+    beforeScroll: {
+      type: Boolean,
+      default: false
     }
   },
   mounted() {
@@ -53,6 +63,22 @@ export default {
         let me = this
         this.scroll.on('scroll', (pos) => {
           me.$emit('scroll', pos)
+        })
+      }
+
+      if (this.pullup) {
+        //每次滚动结束
+        this.scroll.on('scrollEnd', () => {
+          //当scroll快滚动到底部了
+          if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
+            this.$emit('scrollToEnd')
+          }
+        })
+      }
+
+      if (this.beforeScroll) {
+        this.scroll.on('beforeScrollStart', () => {
+          this.$emit('beforeScroll')
         })
       }
     },
