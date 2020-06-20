@@ -29,6 +29,10 @@ const mutations = {
   //添加被点击的排行榜item
   [types.SET_TOP_LIST] (state, topList) {
     state.topList = topList
+  },
+  //添加搜索历史
+  [types.SET_SEARCH_HISTORY] (state, history) {
+    state.searchHistory = history
   }
 }
 

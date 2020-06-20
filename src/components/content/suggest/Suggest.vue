@@ -66,6 +66,7 @@ export default {
           //给result赋值的是格式化后的数据，修改后的版本是异步任务，_genResult返回promise对象
           this._genResult(res.data).then((result) => {
             this.result = result
+            //延迟20ms => 为了让 DOM 更新且 bs 重新计算后，可以正确判断整个容器是否可以滚动
             setTimeout(() => {
               this._checkMore(res.data)
             }, 20)
@@ -125,10 +126,15 @@ export default {
         //如果点击的是歌曲，通过actions来向vuex中添加歌曲
         this.insertSong(item)
       }
+      //每次点击item发射select事件，可以被外部用来记录搜索历史
+      this.$emit('select')
     },
     //列表开始滚动，发射事件给search组件，以隐藏手机键盘（输入框blur）
     listScroll() {
       this.$emit('listScroll')
+    },
+    refresh() {
+      this.$refs.suggest.refresh()
     },
     //格式化搜索结果数据
     _genResult(data) {
@@ -156,6 +162,10 @@ export default {
       const song = data.song
       if (!song.list.length || (song.curnum + song.curpage * perpage) >= song.totalnum) {
         this.hasMore = false
+      } else {
+        if (!this.$refs.suggest.scroll.hasVerticalScroll) {
+          this.searchMore()
+        }
       }
     },
 

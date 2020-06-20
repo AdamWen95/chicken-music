@@ -1,6 +1,8 @@
 import * as types from './mutation-types'
 import {playMode} from 'common/js/config'
 import {shuffle} from 'common/js/util'
+import {saveSearch, deleteSearch, clearSearch} from 'common/js/cache'
+import storage from 'good-storage'
 
 //找到列表中某歌曲的索引
 function findIndex(list, song) {
@@ -10,7 +12,7 @@ function findIndex(list, song) {
 }
 
 //选择播放
-export const selectPlay = function({commit, state}, {list, index}) {
+export const selectPlay = function ({commit, state}, {list, index}) {
   commit(types.SET_SEQUENCE_LIST, list)
   //如果是随机模式下点击歌曲
   if (state.mode === playMode.random) {
@@ -26,7 +28,7 @@ export const selectPlay = function({commit, state}, {list, index}) {
 }
 
 //随机播放
-export const randomPlay = function({commit}, {list}) {
+export const randomPlay = function ({commit}, {list}) {
   commit(types.SET_PLAY_MODE, playMode.random)
   commit(types.SET_SEQUENCE_LIST, list)
   //产生随机列表
@@ -38,7 +40,7 @@ export const randomPlay = function({commit}, {list}) {
 }
 
 //搜索结果中点击歌曲
-export const insertSong = function({commit, state}, song) {
+export const insertSong = function ({commit, state}, song) {
   //通过.slice()产生列表的副本，使playlist和sequenceList的操作不会直接修改store中的state；而数值类型的currentIndex没关系
   let playlist = state.playlist.slice()
   let sequenceList = state.sequenceList.slice()
@@ -81,4 +83,19 @@ export const insertSong = function({commit, state}, song) {
   commit(types.SET_CURRENT_INDEX, currentIndex)
   commit(types.SET_FULL_SCREEN, true)
   commit(types.SET_PLAYING_STATE, true)
+}
+
+//储存搜索历史，不仅存到vuex还要存到localStorage
+export const saveSearchHistory = function ({commit}, query) {
+  commit(types.SET_SEARCH_HISTORY, saveSearch(query)) //saveSearch由cache中定义
+}
+
+//删除搜索历史
+export const deleteSearchHistory = function ({commit}, query) {
+  commit(types.SET_SEARCH_HISTORY, deleteSearch(query))
+}
+
+//清除全部搜索历史
+export const clearSearchHistory = function ({commit}) {
+  commit(types.SET_SEARCH_HISTORY, clearSearch())
 }

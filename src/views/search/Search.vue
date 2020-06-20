@@ -5,23 +5,37 @@
       <search-box ref="searchBox" @query="onQueryChange"></search-box>
     </div>
     <!-- 热门搜索区 没有查询字段的时候显示 -->
-    <div class="shortcut-wrapper" v-show="!query">
-      <div class="shortcut">
-        <div class="hot-key">
-          <h1 class="title">热门搜索</h1>
-          <ul>
-            <!-- 点击热搜词，将其填入input中 -->
-            <li class="item" v-for="(item, index) in hotKey" :key="index" @click="addQuery(item.k)">
-              <span>{{item.k}}</span>
-            </li>
-          </ul>
+    <div ref="shortcutWrapper" class="shortcut-wrapper" v-show="!query">
+      <scroll class="shortcut" :data="shortcut" ref="shortcut">
+        <div>
+          <div class="hot-key">
+            <h1 class="title">热门搜索</h1>
+            <ul>
+              <!-- 点击热搜词，将其填入input中 -->
+              <li class="item" v-for="(item, index) in hotKey" :key="index" @click="addQuery(item.k)">
+                <span>{{item.k}}</span>
+              </li>
+            </ul>
+          </div>
+          <!-- 搜索历史区 -->
+          <div class="search-history" v-show="searchHistory.length">
+            <h1 class="title">
+              <span class="text">搜索历史</span>
+              <span class="clear" @click="showConfirm">
+                <i class="icon-clear"></i>
+              </span>
+            </h1>
+            <search-list :searches="searchHistory" @select="addQuery" @delete="deleteSearchHistory"></search-list>
+          </div>
         </div>
-      </div>
+      </scroll>
     </div>
     <!-- 搜索结果 有查询字段的时候显示 -->
-    <div class="search-result" v-show="query">
-      <suggest :query="query" @listScroll="blurInput"></suggest>
+    <div ref="searchResult" class="search-result" v-show="query">
+      <suggest ref="suggest" :query="query" @listScroll="blurInput" @select="saveSearch"></suggest>
     </div>
+    <!-- 弹窗 -->
+    <confirm ref="confirm" text="是否清空所有搜索历史" confirmBtnText="清空" @confirm="clearSearchHistory"></confirm>
     <!-- 二级路由 跳转到歌手/歌曲页面 -->
     <router-view></router-view>
   </div>
@@ -29,12 +43,20 @@
 
 <script>
 import SearchBox from 'components/common/search-box/SearchBox'
+import SearchList from 'components/common/search-list/SearchList'
+import Confirm from 'components/common/confirm/Confirm'
+import Scroll from 'components/common/scroll/Scroll'
 import Suggest from 'components/content/suggest/Suggest'
 
 import {getHotKey} from 'api/search'
 import {ERR_OK} from 'api/config'
 
+import {playlistMixin} from 'common/js/mixin'
+
+import {mapActions, mapGetters} from 'vuex'
+
 export default {
+  mixins: [playlistMixin],
   data() {
     return {
       hotKey: [],
@@ -44,7 +66,26 @@ export default {
   created() {
     this._getHotKey()
   },
+  computed: {
+    //scroll组件根据内部的数据refresh()，但是这里有hotKey和searchHistory两个异步获取的数据，这里直接将二者拼接，任何一个改变都刷新scroll
+    shortcut() {
+      return this.hotKey.concat(this.searchHistory)
+    },
+    ...mapGetters([
+      'searchHistory'
+    ])
+  },
   methods: {
+    //有歌曲播放 改变shortcutWrapper和shortcutWrapper的高度，同时刷新scroll
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : ''
+
+      this.$refs.shortcutWrapper.style.bottom = bottom
+      this.$refs.shortcut.refresh()
+
+      this.$refs.shortcutWrapper.style.bottom = bottom
+      this.$refs.suggest.refresh()
+    },
     //获取热搜关键词
     _getHotKey() {
       getHotKey().then((res) => {
@@ -65,11 +106,36 @@ export default {
     //搜索结果开始滚动，输入框失去焦点
     blurInput() {
       this.$refs.searchBox.blur()
+    },
+    //保存搜索数据
+    saveSearch() {
+      this.saveSearchHistory(this.query)
+    },
+    //点击清空历史记录，出弹窗
+    showConfirm() {
+      this.$refs.confirm.show()
+    },
+    ...mapActions([
+      'saveSearchHistory',
+      'deleteSearchHistory',
+      'clearSearchHistory'
+    ])
+  },
+  watch: {
+    query(newQuery) {
+      if (!newQuery) {
+        setTimeout(() => {
+          this.$refs.shortcut.refresh()
+        }, 20)
+      }
     }
   },
   components: {
     SearchBox,
-    Suggest
+    Suggest,
+    SearchList,
+    Confirm,
+    Scroll
   }
 }
 </script>
