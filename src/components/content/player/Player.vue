@@ -106,12 +106,15 @@
             <i :class="miniIcon" class="icon-mini" @click.stop="togglePlaying"></i>
           </progress-circle>
         </div>
-        <!-- 展开播放列表按钮 -->
-        <div class="control">
+        <!-- 展开播放列表按钮 .stop防止其冒泡到父容器（父容器也有click事件=>打开大播放器）-->
+        <div class="control" @click.stop="showPlaylist">
           <i class="icon-playlist"></i>
         </div>
       </div>
     </transition>
+
+    <!-- 播放列表 -->
+    <playlist ref="playlist"></playlist>
 
     <!-- 监听canplay：歌曲请求到了才能播放（调用ready方法修改songReady值）和error：歌曲加载发生错误 事件；歌曲ready了才能点击下一首 -->
     <!-- timeupdate：播放器播放时间更新事件 -->
@@ -123,6 +126,7 @@
 import ProgressBar from 'components/common/progress-bar/ProgressBar'
 import ProgressCircle from 'components/common/progress-circle/ProgressCircle'
 import Scroll from 'components/common/scroll/Scroll'
+import Playlist from 'components/content/playlist/Playlist'
 
 import {mapGetters, mapMutations} from 'vuex'
 //第三方库，通过js写css3动画
@@ -141,7 +145,8 @@ export default {
   components: {
     ProgressBar,
     ProgressCircle,
-    Scroll
+    Scroll,
+    Playlist
   },
   data() {
     return {
@@ -513,6 +518,11 @@ export default {
       this.$refs.middleL.style[transitionDuration] = `${time}ms`
     },
 
+    //展开播放列表
+    showPlaylist() {
+      this.$refs.playlist.show()
+    },
+
     //数字补位，默认是2位
     _pad(num, n = 2) {
       let len = num.toString().length
@@ -526,6 +536,11 @@ export default {
   watch: {
     //监听currentSong改变->播放歌曲
     currentSong(newSong, oldSong) {
+      //如果删除掉最后一首，那么newSong为undefined，不需要向下进行，会报错
+      if (!newSong.id) {
+        return
+      }
+
       //在暂停时切换播放模式，歌曲id不变，不让其自动播放
       if (newSong.id === oldSong.id) {
         return
