@@ -9,6 +9,7 @@ const Search = () => import ('views/search/Search')
 const SingerDetail = () => import ('views/singer-detail/SingerDetail')
 const Disc = () => import ('views/disc/Disc')
 const TopList = () => import ('views/top-list/TopList')
+const UserCenter = () => import ('views/user-center/UserCenter')
 
 Vue.use(VueRouter)
 
@@ -55,6 +56,10 @@ const routes = [{
           component: SingerDetail
         }
       ]
+    },
+    {
+      path: '/user',
+      component: UserCenter
     }
 ]
 

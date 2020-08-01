@@ -40,6 +40,11 @@ export default {
     beforeScroll: {
       type: Boolean,
       default: false
+    },
+    //刷新延迟
+    refreshDelay: {
+      type: Number,
+      default: 20
     }
   },
   mounted() {
@@ -105,7 +110,7 @@ export default {
     data() {
       setTimeout(() => {
         this.refresh()
-      }, 20)
+      }, this.refreshDelay)
     }
   }
 }

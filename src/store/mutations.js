@@ -33,6 +33,10 @@ const mutations = {
   //添加搜索历史
   [types.SET_SEARCH_HISTORY] (state, history) {
     state.searchHistory = history
+  },
+  //添加播放历史
+  [types.SET_PLAY_HISTORY] (state, history) {
+    state.playHistory = history
   }
 }
 

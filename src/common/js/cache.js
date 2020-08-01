@@ -4,6 +4,8 @@ import storage from 'good-storage'
 
 const SEARCH_KEY = '__search__' //localStorage中的key
 const SEARCH_MAX_LENGTH = 15 //最大储存条数
+const PLAY_KEY = '__play__' 
+const PLAY_MAX_LENGTH = 200
 
 //定义一个插入数组的函数
 //arr => 要处理的数组；val => 要插入的值；compare => 比较函数(findIndex的参数是函数)；maxLen => 数组的最大长度
@@ -67,4 +69,19 @@ export function deleteSearch(query) {
 export function clearSearch() {
   storage.remove(SEARCH_KEY)
   return []
+}
+
+//将播放记录添加到storage中
+export function savePlay(song) {
+  let songs = storage.get(PLAY_KEY, [])
+  insertArray(songs, song, (item) => {
+    return item.id === song.id
+  }, PLAY_MAX_LENGTH)
+  storage.set(PLAY_KEY, songs)
+  return songs
+}
+
+//读取播放记录
+export function loadPlay() {
+  return storage.get(PLAY_KEY, [])
 }

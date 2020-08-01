@@ -6,7 +6,7 @@
     </div>
     <!-- 热门搜索区 没有查询字段的时候显示 -->
     <div ref="shortcutWrapper" class="shortcut-wrapper" v-show="!query">
-      <scroll class="shortcut" :data="shortcut" ref="shortcut">
+      <scroll :refreshDelay="refreshDelay" class="shortcut" :data="shortcut" ref="shortcut">
         <div>
           <div class="hot-key">
             <h1 class="title">热门搜索</h1>
@@ -51,16 +51,16 @@ import Suggest from 'components/content/suggest/Suggest'
 import {getHotKey} from 'api/search'
 import {ERR_OK} from 'api/config'
 
-import {playlistMixin} from 'common/js/mixin'
+import {playlistMixin, searchMixin} from 'common/js/mixin'
 
-import {mapActions, mapGetters} from 'vuex'
+import {mapActions} from 'vuex'
 
 export default {
-  mixins: [playlistMixin],
+  mixins: [playlistMixin, searchMixin],
   data() {
     return {
-      hotKey: [],
-      query: ''
+      hotKey: []
+      //query: ''
     }
   },
   created() {
@@ -70,10 +70,10 @@ export default {
     //scroll组件根据内部的数据refresh()，但是这里有hotKey和searchHistory两个异步获取的数据，这里直接将二者拼接，任何一个改变都刷新scroll
     shortcut() {
       return this.hotKey.concat(this.searchHistory)
-    },
-    ...mapGetters([
-      'searchHistory'
-    ])
+    }
+    // ...mapGetters([
+    //   'searchHistory'
+    // ])
   },
   methods: {
     //有歌曲播放 改变shortcutWrapper和shortcutWrapper的高度，同时刷新scroll
@@ -95,6 +95,7 @@ export default {
         }
       })
     },
+    /* 放入mixin中
     //点击热搜词，将其填入input中（调用searchBox的方法）
     addQuery(query) {
       this.$refs.searchBox.setQuery(query)
@@ -111,15 +112,17 @@ export default {
     saveSearch() {
       this.saveSearchHistory(this.query)
     },
+    */
     //点击清空历史记录，出弹窗
     showConfirm() {
       this.$refs.confirm.show()
     },
     ...mapActions([
-      'saveSearchHistory',
-      'deleteSearchHistory',
+      //'saveSearchHistory',
+      //'deleteSearchHistory',
       'clearSearchHistory'
     ])
+    
   },
   watch: {
     query(newQuery) {

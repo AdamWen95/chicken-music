@@ -6,13 +6,13 @@
         <!-- 头部 -->
         <div class="list-header">
           <h1 class="title">
-            <i class="icon"></i>
-            <span class="text"></span>
+            <i class="icon" :class="iconMode" @click="changeMode"></i>
+            <span class="text">{{modeText}}</span>
             <span class="clear" @click="showConfirm"><i class="icon-clear"></i></span>
           </h1>
         </div>
         <!-- 内容 -->
-        <scroll ref="listContent" :data="sequenceList" class="list-content">
+        <scroll :refreshDelay="refreshDelay" ref="listContent" :data="sequenceList" class="list-content">
           <!-- 使用transition-group渲染动画 -->
           <transition-group name="list" tag="ul">
             <li ref="listItem" class="item" v-for="(item, index) in sequenceList" :key="item.id" @click="selectItem(item, index)">
@@ -29,7 +29,7 @@
         </scroll>
         <!-- 操作区 -->
         <div class="list-operate">
-          <div class="add">
+          <div class="add" @click="addSong">
             <i class="icon-add"></i>
             <span class="text">添加歌曲到队列</span>
           </div>
@@ -41,35 +41,50 @@
       </div>
       <!-- 提示框 -->
       <confirm ref="confirm" text="是否清空播放列表" confirmBtnText="清空" @confirm="confirmClear"></confirm>
+
+      <!-- 添加歌曲页面组件=>一层直接覆盖当前页面 -->
+      <add-song ref="addSong"></add-song>
     </div>
   </transition>
 </template>
 
 <script>
-import {mapGetters, mapMutations, mapActions} from 'vuex'
+import {mapActions} from 'vuex'
 
 import Scroll from 'components/common/scroll/Scroll'
 import Confirm from 'components/common/confirm/Confirm'
+import AddSong from 'components/content/add-song/AddSong'
 
 import {playMode} from 'common/js/config'
+import {playerMixin} from 'common/js/mixin'
 
 export default {
+  mixins: [playerMixin],
   data() {
     return {
-      showFlag: false
+      showFlag: false,
+      //scroll内部的item删除添加有动画，需要更长的刷新延迟时间
+      refreshDelay: 100
     }
   },
   components: {
     Scroll,
-    Confirm
+    Confirm,
+    AddSong
   },
   computed: {
+    /* mixin导入
     ...mapGetters([
       'sequenceList',
       'currentSong',
       'playlist',
       'mode'
     ])
+    */
+   //头部文案
+    modeText() {
+      return this.mode === playMode.sequence ? '顺序播放' : this.mode === playMode.random ? '随机播放' : '单曲循环'
+    }
   },
   methods: {
     show() {
@@ -127,10 +142,15 @@ export default {
       //将Playlist隐藏
       this.hide()
     },
+    addSong() {
+      this.$refs.addSong.show()
+    },
+    /* mixin导入
     ...mapMutations({
       'setCurrentIndex': 'SET_CURRENT_INDEX',
       'setPlayingState': 'SET_PLAYING_STATE'
     }),
+    */
     ...mapActions([
       'deleteSong',
       'deleteSongList'

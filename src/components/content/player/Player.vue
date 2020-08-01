@@ -128,7 +128,7 @@ import ProgressCircle from 'components/common/progress-circle/ProgressCircle'
 import Scroll from 'components/common/scroll/Scroll'
 import Playlist from 'components/content/playlist/Playlist'
 
-import {mapGetters, mapMutations} from 'vuex'
+import {mapGetters, mapMutations, mapActions} from 'vuex'
 //第三方库，通过js写css3动画
 import animations from 'create-keyframe-animation'
 //第三方库，解析歌词字符串
@@ -136,12 +136,14 @@ import Lyric from 'lyric-parser'
 
 import {prefixStyle} from 'common/js/dom'
 import {playMode} from 'common/js/config'
-import {shuffle} from 'common/js/util'
+//import {shuffle} from 'common/js/util'
+import {playerMixin} from 'common/js/mixin'
 
 const transform = prefixStyle('transform')
 const transitionDuration = prefixStyle('transitionDuration')
 
 export default {
+  mixins: [playerMixin],
   components: {
     ProgressBar,
     ProgressCircle,
@@ -164,12 +166,8 @@ export default {
   computed: {
     ...mapGetters([
       'fullScreen',
-      'playlist',
-      'currentSong',
       'playing',
-      'currentIndex',
-      'mode',
-      'sequenceList'
+      'currentIndex'
     ]),
     //播放/暂停图标
     playIcon() {
@@ -179,9 +177,10 @@ export default {
       return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
     },
     //播放模式的图标切换
-    iconMode() {
-      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
-    },
+    // iconMode() {
+    //   return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
+    // },
+
     //唱片旋转样式
     cdCls() {
       return this.playing ? 'play' : ''
@@ -202,11 +201,9 @@ export default {
     //不能直接修改store的数据，需要通过mutations的方法
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
-      setPlayingState: 'SET_PLAYING_STATE',
-      setCurrentIndex: 'SET_CURRENT_INDEX',
-      setPlayMode: 'SET_PLAY_MODE',
-      setPlaylist: 'SET_PLAYLIST'
+      
     }),
+    ...mapActions(['savePlayHistory']),
 
     //缩小与展开播放器
     back() {
@@ -364,6 +361,8 @@ export default {
     },
     ready() {
       this.songReady = true
+      //保存播放历史
+      this.savePlayHistory(this.currentSong)
     },
     //如果网络错误或者url有问题，会导致下一首、播放按钮等点击事件无法进行切歌，因此在error发生的时候也将songReady设为true
     error() {
@@ -394,6 +393,8 @@ export default {
         this.currentLyric.seek(currentTime * 1000)
       }
     },
+    /*这部分放入mixin中
+
     //改变播放模式
     changeMode() {
       //只有3种状态，因此取余
@@ -418,6 +419,7 @@ export default {
       })
       this.setCurrentIndex(index)
     },
+    */
 
     //请求歌词
     getLyric() {
