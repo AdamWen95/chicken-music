@@ -17,3 +17,5 @@ export const topList = state => state.topList
 export const searchHistory = state => state.searchHistory
 //播放历史数据
 export const playHistory = state => state.playHistory
+//收藏歌曲列表
+export const favoriteList = state => state.favoriteList
